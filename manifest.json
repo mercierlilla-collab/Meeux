@@ -1,0 +1,9 @@
+{
+  "name": "Meeux",
+  "short_name": "Meeux",
+  "icons": [{"src": "icon.png", "sizes": "512x512", "type": "image/png"}],
+  "start_url": "/Meeux/",
+  "display": "standalone",
+  "background_color": "#F7F2EA",
+  "theme_color": "#C4785A"
+}
