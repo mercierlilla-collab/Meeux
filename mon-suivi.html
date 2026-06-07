@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meeux</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+:root {
+  --cream: #F7F2EA; --warm: #EDE5D8; --card: #FFFCF7;
+  --sage: #7A9E7E; --sage-light: #B5C9B7; --terra: #C4785A;
+  --terra-light: #E2A98A; --blue: #7B9EB8; --brown: #A0856E;
+  --gold: #C9A96E; --ink: #2C2820; --ink-mid: #4A4238;
+  --ink-light: #7A6E62; --ink-faint: #B0A598;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--cream); font-family:'DM Sans',sans-serif; color:var(--ink); min-height:100vh; padding-bottom:80px; }
+
+.nav { position:fixed; bottom:0; left:0; right:0; background:var(--card); border-top:1px solid var(--warm); display:flex; z-index:100; box-shadow:0 -4px 20px rgba(44,40,32,0.08); }
+.nav-btn { flex:1; padding:12px 8px; border:none; background:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; font-family:'DM Sans',sans-serif; font-size:10px; color:var(--ink-faint); font-weight:400; transition:color 0.2s; }
+.nav-btn.active { color:var(--terra); }
+.nav-btn .nav-icon { font-size:20px; }
+
+.page { display:none; padding:28px 20px 20px; max-width:480px; margin:0 auto; }
+.page.active { display:block; }
+
+.page-label { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--terra); font-weight:500; margin-bottom:6px; }
+.page-title { font-family:'Cormorant Garamond',serif; font-size:30px; font-weight:300; color:var(--ink); line-height:1.2; margin-bottom:4px; }
+.page-title em { font-style:italic; color:var(--terra); }
+.page-sub { font-size:13px; color:var(--ink-light); font-weight:300; margin-bottom:24px; }
+
+.date-display { background:var(--card); border-radius:14px; padding:14px 18px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 8px rgba(44,40,32,0.05); }
+.date-text { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:400; color:var(--ink); text-transform:capitalize; }
+.date-badge { font-size:11px; color:var(--ink-faint); font-weight:300; }
+
+/* MODE BADGE */
+.mode-row { display:flex; gap:8px; margin-bottom:16px; align-items:center; flex-wrap:wrap; }
+.mode-badge { display:inline-flex; align-items:center; gap:6px; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:500; }
+.mode-badge.semaine { background:#EEF4EF; color:var(--sage); border:1.5px solid var(--sage-light); }
+.mode-badge.weekend { background:#FBF5E8; color:var(--gold); border:1.5px solid var(--gold); }
+.mode-badge.special { background:#FAF0EA; color:var(--terra); border:1.5px solid var(--terra-light); }
+.mode-toggle-btn { font-size:11px; padding:6px 12px; border-radius:20px; border:1.5px solid var(--ink-faint); background:none; color:var(--ink-light); cursor:pointer; font-family:'DM Sans',sans-serif; font-weight:400; transition:all 0.2s; }
+.mode-toggle-btn.active-special { border-color:var(--terra); color:var(--terra); background:#FAF0EA; }
+
+.alternance-badge { display:inline-flex; align-items:center; gap:8px; background:var(--card); border-radius:20px; padding:6px 14px; margin-bottom:16px; box-shadow:0 2px 8px rgba(44,40,32,0.05); border:1.5px solid var(--terra); }
+.alternance-badge .alt-label { font-size:11px; color:var(--ink-light); font-weight:300; }
+.alternance-badge .alt-value { font-size:12px; font-weight:500; color:var(--terra); }
+
+.section-title { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--ink-light); font-weight:500; margin-bottom:12px; margin-top:20px; }
+
+.mood-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:6px; }
+.mood-btn { background:var(--card); border:2px solid transparent; border-radius:12px; padding:10px 6px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; transition:all 0.2s; box-shadow:0 2px 8px rgba(44,40,32,0.05); }
+.mood-btn.selected { border-color:var(--terra); background:#FDF4EF; }
+.mood-emoji { font-size:22px; }
+.mood-label { font-size:9px; color:var(--ink-light); font-weight:400; text-align:center; }
+
+.hard-day-panel { display:none; background:#FEF0EC; border:1.5px solid #F0C4B4; border-radius:16px; padding:18px; margin-top:16px; }
+.hard-day-panel.visible { display:block; animation:fadeUp 0.4s ease both; }
+.hard-day-title { font-family:'Cormorant Garamond',serif; font-size:17px; color:var(--terra); margin-bottom:6px; }
+.hard-day-sub { font-size:12px; color:var(--ink-light); font-weight:300; margin-bottom:14px; line-height:1.5; }
+.tool-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.tool-card { background:white; border-radius:12px; padding:14px 12px; cursor:pointer; border:2px solid transparent; transition:all 0.2s; box-shadow:0 2px 6px rgba(44,40,32,0.06); }
+.tool-card:hover,.tool-card.active { border-color:var(--terra); background:#FDF4EF; }
+.tool-icon { font-size:22px; margin-bottom:6px; }
+.tool-name { font-size:12px; font-weight:500; color:var(--ink); margin-bottom:3px; }
+.tool-desc { font-size:11px; color:var(--ink-faint); font-weight:300; line-height:1.4; }
+.tool-instruction { background:white; border-radius:10px; padding:14px; margin-top:10px; display:none; border:1px solid #F0C4B4; }
+.tool-instruction.visible { display:block; animation:fadeUp 0.3s ease both; }
+.tool-instruction-text { font-size:13px; line-height:1.7; color:var(--ink-mid); font-weight:300; }
+
+.energy-row { display:flex; gap:8px; margin-bottom:4px; }
+.energy-btn { flex:1; padding:10px; border:2px solid transparent; border-radius:10px; background:var(--card); cursor:pointer; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:400; color:var(--ink-mid); transition:all 0.2s; box-shadow:0 2px 8px rgba(44,40,32,0.05); text-align:center; }
+.energy-btn.selected { border-color:var(--blue); background:#EDF3F8; color:var(--blue); }
+
+.bloc-list { display:flex; flex-direction:column; gap:8px; }
+.bloc-item { background:var(--card); border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.2s; box-shadow:0 2px 8px rgba(44,40,32,0.05); border:2px solid transparent; user-select:none; }
+.bloc-item:hover { transform:translateX(3px); }
+.bloc-item.done { border-color:var(--sage); background:#F2F7F2; }
+.bloc-check { width:24px; height:24px; border-radius:50%; border:2px solid var(--ink-faint); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; font-size:13px; }
+.bloc-item.done .bloc-check { background:var(--sage); border-color:var(--sage); color:white; }
+.bloc-info { flex:1; }
+.bloc-name { font-size:14px; font-weight:400; color:var(--ink); }
+.bloc-time { font-size:11px; color:var(--ink-faint); font-weight:300; margin-top:2px; }
+.bloc-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+.validate-btn { width:100%; margin-top:22px; padding:16px; background:var(--terra); color:white; border:none; border-radius:14px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; cursor:pointer; transition:all 0.2s; }
+.validate-btn:hover { background:#B5684A; transform:translateY(-1px); }
+.validate-btn:disabled { background:var(--ink-faint); cursor:not-allowed; transform:none; }
+
+.feedback-card { background:linear-gradient(135deg,#FDF4EF,#F7F0E8); border-radius:16px; padding:20px; margin-top:18px; border:1px solid #EDD8C8; display:none; }
+.feedback-card.visible { display:block; animation:fadeUp 0.5s ease both; }
+.feedback-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.feedback-icon { font-size:20px; }
+.feedback-title { font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:400; color:var(--ink); }
+.feedback-text { font-size:13.5px; line-height:1.7; color:var(--ink-mid); font-weight:300; }
+
+.dots span { display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--terra); margin:0 2px; animation:bounce 1s infinite; }
+.dots span:nth-child(2) { animation-delay:0.2s; }
+.dots span:nth-child(3) { animation-delay:0.4s; }
+.feedback-loading { display:flex; align-items:center; gap:8px; color:var(--ink-light); font-size:13px; }
+
+/* SEMAINE */
+.week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:20px; }
+.week-day { display:flex; flex-direction:column; align-items:center; gap:5px; }
+.week-day-label { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:var(--ink-faint); font-weight:500; }
+.week-day-dot { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; background:var(--warm); color:var(--ink-faint); }
+.week-day-dot.great { background:var(--sage); color:white; }
+.week-day-dot.good { background:var(--sage-light); color:white; }
+.week-day-dot.ok { background:var(--gold); color:white; }
+.week-day-dot.hard { background:var(--terra-light); color:white; }
+.week-day-dot.today { box-shadow:0 0 0 3px var(--terra); }
+
+.mood-chart-wrap { background:var(--card); border-radius:14px; padding:16px; margin-bottom:16px; box-shadow:0 2px 8px rgba(44,40,32,0.05); }
+.mood-chart-title { font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--ink-light); font-weight:500; margin-bottom:14px; }
+.mood-chart { display:flex; align-items:flex-end; gap:6px; height:70px; }
+.mood-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end; }
+.mood-bar { width:100%; border-radius:4px 4px 0 0; transition:height 0.5s ease; min-height:4px; }
+.mood-bar-label { font-size:8px; color:var(--ink-faint); text-transform:uppercase; }
+
+.stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+.stat-card { background:var(--card); border-radius:14px; padding:14px 12px; text-align:center; box-shadow:0 2px 8px rgba(44,40,32,0.05); }
+.stat-value { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; color:var(--terra); line-height:1; }
+.stat-label { font-size:10px; color:var(--ink-faint); font-weight:400; margin-top:4px; line-height:1.3; }
+
+.history-list { display:flex; flex-direction:column; gap:10px; }
+.history-item { background:var(--card); border-radius:12px; padding:14px 16px; box-shadow:0 2px 8px rgba(44,40,32,0.05); }
+.history-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.history-date { font-family:'Cormorant Garamond',serif; font-size:15px; font-weight:400; color:var(--ink); text-transform:capitalize; }
+.history-mood { font-size:18px; }
+.history-blocs { display:flex; gap:5px; flex-wrap:wrap; }
+.history-bloc { font-size:10px; padding:3px 8px; border-radius:20px; font-weight:400; }
+.history-bloc.done { background:#EEF4EF; color:var(--sage); }
+.history-bloc.skip { background:var(--warm); color:var(--ink-faint); text-decoration:line-through; }
+
+.analysis-card { background:var(--card); border-radius:16px; padding:18px; margin-top:8px; box-shadow:0 2px 8px rgba(44,40,32,0.05); }
+.analysis-title { font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:400; color:var(--ink); margin-bottom:10px; }
+.analysis-text { font-size:13px; line-height:1.7; color:var(--ink-mid); font-weight:300; }
+.refresh-btn { width:100%; margin-top:14px; padding:12px; background:none; border:1.5px solid var(--terra); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:13px; color:var(--terra); cursor:pointer; transition:all 0.2s; }
+.refresh-btn:hover { background:#FDF4EF; }
+
+.weekly-question-card { background:linear-gradient(135deg,#EDF3F8,#E8EFF5); border-radius:14px; padding:16px 18px; margin-bottom:16px; border:1px solid #C8D8E8; }
+.wq-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--blue); font-weight:500; margin-bottom:6px; }
+.wq-text { font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:400; color:var(--ink); line-height:1.5; font-style:italic; }
+
+/* ROUTINE PAGE */
+.routine-bloc { background:var(--card); border-radius:14px; padding:16px 18px; margin-bottom:10px; box-shadow:0 2px 8px rgba(44,40,32,0.05); border-left:4px solid transparent; }
+.routine-bloc.velo { border-color:var(--sage); }
+.routine-bloc.travail { border-color:var(--gold); }
+.routine-bloc.coherence { border-color:var(--blue); }
+.routine-bloc.soir { border-color:var(--terra); }
+.routine-bloc.sport { border-color:var(--brown); }
+.routine-bloc.weekend-bloc { border-color:var(--gold); }
+.routine-bloc.regle { border-color:var(--sage-light); }
+.routine-bloc-header { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.routine-bloc-icon { font-size:20px; }
+.routine-bloc-title { font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:400; color:var(--ink); }
+.routine-bloc-time { font-size:11px; color:var(--ink-faint); font-weight:300; }
+.routine-bloc-items { display:flex; flex-direction:column; gap:5px; }
+.routine-bloc-item { font-size:12.5px; color:var(--ink-light); font-weight:300; padding-left:12px; position:relative; line-height:1.5; }
+.routine-bloc-item::before { content:'·'; position:absolute; left:0; color:var(--terra); font-weight:700; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);} }
+@keyframes bounce { 0%,80%,100%{transform:translateY(0);}40%{transform:translateY(-6px);} }
+.page > * { animation:fadeUp 0.5s ease both; }
+</style>
+</head>
+<body>
+
+<div class="page active" id="page-today">
+  <div class="page-label">Check du jour</div>
+  <div class="page-title">Comment tu <em>vas</em> ?</div>
+  <div class="page-sub" id="page-sub-text"></div>
+
+  <div class="date-display">
+    <div class="date-text" id="today-date"></div>
+    <div class="date-badge" id="streak-display">🌿 Jour 1</div>
+  </div>
+
+  <div class="mode-row">
+    <div class="mode-badge" id="mode-badge">☀️ Semaine</div>
+    <button class="mode-toggle-btn" id="special-toggle" onclick="toggleSpecialMode()">🌧 Mauvais temps / Vacances</button>
+  </div>
+
+  <div id="alternance-indicator"></div>
+
+  <div class="section-title">Mon état émotionnel</div>
+  <div class="mood-grid">
+    <button class="mood-btn" data-mood="5" onclick="selectMood(this)"><span class="mood-emoji">🌸</span><span class="mood-label">Séreine</span></button>
+    <button class="mood-btn" data-mood="4" onclick="selectMood(this)"><span class="mood-emoji">🌤</span><span class="mood-label">Bien</span></button>
+    <button class="mood-btn" data-mood="3" onclick="selectMood(this)"><span class="mood-emoji">🌫</span><span class="mood-label">Moyen</span></button>
+    <button class="mood-btn" data-mood="2" onclick="selectMood(this)"><span class="mood-emoji">🌧</span><span class="mood-label">Difficile</span></button>
+    <button class="mood-btn" data-mood="1" onclick="selectMood(this)"><span class="mood-emoji">⛈</span><span class="mood-label">Submergée</span></button>
+  </div>
+
+  <div class="hard-day-panel" id="hard-day-panel">
+    <div class="hard-day-title">💛 Journée difficile</div>
+    <div class="hard-day-sub">C'est ok. Voici 3 micro-outils pour tout de suite :</div>
+    <div class="tool-grid">
+      <div class="tool-card" onclick="showTool('soupir', this)"><div class="tool-icon">😮‍💨</div><div class="tool-name">Soupir physiologique</div><div class="tool-desc">Calme en 30 sec</div></div>
+      <div class="tool-card" onclick="showTool('grounding', this)"><div class="tool-icon">🌿</div><div class="tool-name">Grounding 5-4-3-2-1</div><div class="tool-desc">Revenir au présent</div></div>
+      <div class="tool-card" onclick="showTool('froid', this)"><div class="tool-icon">💧</div><div class="tool-name">Eau froide</div><div class="tool-desc">Reset immédiat</div></div>
+      <div class="tool-card" onclick="showTool('coherence', this)"><div class="tool-icon">🫁</div><div class="tool-name">Cohérence cardiaque</div><div class="tool-desc">5 min de respiration</div></div>
+    </div>
+    <div class="tool-instruction" id="tool-instruction"><div class="tool-instruction-text" id="tool-instruction-text"></div></div>
+  </div>
+
+  <div class="section-title" style="margin-top:18px;">Mon énergie</div>
+  <div class="energy-row">
+    <button class="energy-btn" data-energy="high" onclick="selectEnergy(this)">⚡ Bonne</button>
+    <button class="energy-btn" data-energy="mid" onclick="selectEnergy(this)">🌿 Correcte</button>
+    <button class="energy-btn" data-energy="low" onclick="selectEnergy(this)">🥱 À plat</button>
+  </div>
+
+  <div class="section-title" style="margin-top:18px;">Ma routine aujourd'hui</div>
+  <div class="bloc-list" id="bloc-list"></div>
+
+  <button class="validate-btn" id="validate-btn" onclick="validateDay()">Valider ma journée</button>
+
+  <div class="feedback-card" id="feedback-card">
+    <div class="feedback-header"><span class="feedback-icon">🌿</span><span class="feedback-title">Pour toi, aujourd'hui</span></div>
+    <div class="feedback-text" id="feedback-text"></div>
+  </div>
+</div>
+
+<!-- SEMAINE -->
+<div class="page" id="page-week">
+  <div class="page-label">Vue d'ensemble</div>
+  <div class="page-title">Ta <em>semaine</em></div>
+  <div class="page-sub">Patterns et progression</div>
+  <div class="week-grid" id="week-grid"></div>
+  <div class="mood-chart-wrap">
+    <div class="mood-chart-title">Humeur — 7 derniers jours</div>
+    <div class="mood-chart" id="mood-chart"></div>
+  </div>
+  <div id="weekly-question-wrap"></div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-value" id="stat-streak">0</div><div class="stat-label">jours consécutifs</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-blocs">0%</div><div class="stat-label">blocs complétés cette semaine</div></div>
+    <div class="stat-card"><div class="stat-value" id="stat-mood">—</div><div class="stat-label">humeur moyenne</div></div>
+  </div>
+  <div class="history-list" id="history-list"></div>
+  <div class="analysis-card">
+    <div class="analysis-title">✨ Analyse de la semaine</div>
+    <div class="analysis-text" id="analysis-text">Valide au moins une journée pour voir ton analyse personnalisée.</div>
+    <button class="refresh-btn" onclick="loadWeekAnalysis()">🔄 Actualiser l'analyse</button>
+  </div>
+</div>
+
+<!-- ROUTINE -->
+<div class="page" id="page-routine">
+  <div class="page-label">Référence</div>
+  <div class="page-title">Ma <em>routine</em></div>
+  <div class="page-sub">Adaptée à chaque jour</div>
+
+  <div class="section-title">Lundi · Mardi · Jeudi · Vendredi</div>
+  <div class="routine-bloc velo"><div class="routine-bloc-header"><span class="routine-bloc-icon">🚲</span><div><div class="routine-bloc-title">Vélo matin</div><div class="routine-bloc-time">25 min — 10 min sans écouteurs</div></div></div></div>
+  <div class="routine-bloc travail"><div class="routine-bloc-header"><span class="routine-bloc-icon">✏️</span><div><div class="routine-bloc-title">Post-it priorité</div><div class="routine-bloc-time">Avant les mails</div></div></div></div>
+  <div class="routine-bloc coherence"><div class="routine-bloc-header"><span class="routine-bloc-icon">🫁</span><div><div class="routine-bloc-title">Cohérence cardiaque × 3</div><div class="routine-bloc-time">Matin · midi · soir — 5 min chaque</div></div></div></div>
+  <div class="routine-bloc velo"><div class="routine-bloc-header"><span class="routine-bloc-icon">🚲</span><div><div class="routine-bloc-title">Vélo retour</div><div class="routine-bloc-time">25 min — musique, transition</div></div></div></div>
+  <div class="routine-bloc soir"><div class="routine-bloc-header"><span class="routine-bloc-icon">🌙</span><div><div class="routine-bloc-title">Soir</div><div class="routine-bloc-time">Muse · J1 yoga nidra / J2 lecture · Carnet</div></div></div></div>
+
+  <div class="section-title">Mercredi · Samedi · Dimanche</div>
+  <div class="routine-bloc coherence"><div class="routine-bloc-header"><span class="routine-bloc-icon">🫁</span><div><div class="routine-bloc-title">Cohérence cardiaque × 3</div><div class="routine-bloc-time">Matin · midi · soir</div></div></div></div>
+  <div class="routine-bloc weekend-bloc"><div class="routine-bloc-header"><span class="routine-bloc-icon">🌿</span><div><div class="routine-bloc-title">Temps en famille sans écrans</div><div class="routine-bloc-time">Un moment dans la journée</div></div></div></div>
+  <div class="routine-bloc sport"><div class="routine-bloc-header"><span class="routine-bloc-icon">🚶‍♀️</span><div><div class="routine-bloc-title">Marche en nature</div><div class="routine-bloc-time">20-30 min</div></div></div></div>
+  <div class="routine-bloc sport"><div class="routine-bloc-header"><span class="routine-bloc-icon">🧘‍♀️</span><div><div class="routine-bloc-title">Étirements / mobilité douce</div><div class="routine-bloc-time">10-15 min</div></div></div></div>
+  <div class="routine-bloc sport"><div class="routine-bloc-header"><span class="routine-bloc-icon">💪</span><div><div class="routine-bloc-title">Gainage postpartum</div><div class="routine-bloc-time">10 min</div></div></div></div>
+  <div class="routine-bloc soir"><div class="routine-bloc-header"><span class="routine-bloc-icon">🌙</span><div><div class="routine-bloc-title">Soir</div><div class="routine-bloc-time">Muse · J1 yoga nidra / J2 lecture · Carnet</div></div></div></div>
+
+  <div class="section-title">Mauvais temps / Vacances</div>
+  <div class="routine-bloc weekend-bloc"><div class="routine-bloc-header"><span class="routine-bloc-icon">👶</span><div><div class="routine-bloc-title">Activité avec bébé</div><div class="routine-bloc-time">Remplace le vélo</div></div></div></div>
+  <div class="routine-bloc sport"><div class="routine-bloc-header"><span class="routine-bloc-icon">🧘‍♀️</span><div><div class="routine-bloc-title">Yoga à la maison</div><div class="routine-bloc-time">20 min</div></div></div></div>
+  <div class="routine-bloc weekend-bloc"><div class="routine-bloc-header"><span class="routine-bloc-icon">🏛</span><div><div class="routine-bloc-title">Marche couverte</div><div class="routine-bloc-time">Centre commercial, musée…</div></div></div></div>
+  <div class="routine-bloc soir"><div class="routine-bloc-header"><span class="routine-bloc-icon">📖</span><div><div class="routine-bloc-title">Lecture prolongée</div><div class="routine-bloc-time">Roman léger</div></div></div></div>
+
+  <div class="routine-bloc regle" style="text-align:center;padding:20px;">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--sage);line-height:1.5;">2 blocs sur 3, c'est une bonne journée.</div>
+    <div style="font-size:12px;color:var(--ink-faint);margin-top:6px;font-weight:300;">La constance, pas l'intensité</div>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" id="nav-today" onclick="showPage('today')"><span class="nav-icon">☀️</span><span>Aujourd'hui</span></button>
+  <button class="nav-btn" id="nav-week" onclick="showPage('week')"><span class="nav-icon">📊</span><span>Semaine</span></button>
+  <button class="nav-btn" id="nav-routine" onclick="showPage('routine')"><span class="nav-icon">🌿</span><span>Routine</span></button>
+</nav>
+
+<script>
+// ── BLOCS PAR MODE ─────────────────────────────────────────
+const BLOCS = {
+  semaine: [
+    {id:'velo-matin', name:'🚲 Vélo matin — sans écouteurs', time:'10 min de silence', color:'var(--sage)'},
+    {id:'post-it', name:'✏️ Post-it priorité du jour', time:'Avant les mails', color:'var(--gold)'},
+    {id:'coherence-matin', name:'🫁 Cohérence cardiaque — matin', time:'5 min · Respirelax', color:'var(--blue)'},
+    {id:'coherence-midi', name:'🫁 Cohérence cardiaque — midi', time:'5 min', color:'var(--blue)'},
+    {id:'velo-retour', name:'🚲 Vélo retour — musique', time:'25 min · décompresser', color:'var(--sage)'},
+    {id:'muse-soir', name:'🧠 Muse ou Respirelax — soir', time:'10 min · après bébé', color:'var(--blue)'},
+    {id:'soir-alt', name:'', time:'15-20 min · en alternance', color:'var(--terra)'},
+    {id:'carnet', name:'📓 Carnet du soir', time:'5 min · 3 questions', color:'var(--terra)'},
+  ],
+  weekend: [
+    {id:'coherence-matin', name:'🫁 Cohérence cardiaque — matin', time:'5 min · Respirelax', color:'var(--blue)'},
+    {id:'coherence-midi', name:'🫁 Cohérence cardiaque — midi', time:'5 min', color:'var(--blue)'},
+    {id:'famille', name:'🌿 Temps en famille sans écrans', time:'Un moment dans la journée', color:'var(--gold)'},
+    {id:'marche-nature', name:'🚶‍♀️ Marche en nature', time:'20-30 min', color:'var(--brown)'},
+    {id:'etirements', name:'🧘‍♀️ Étirements / mobilité douce', time:'10-15 min', color:'var(--brown)'},
+    {id:'gainage', name:'💪 Gainage postpartum', time:'10 min', color:'var(--brown)'},
+    {id:'muse-soir', name:'🧠 Muse ou Respirelax — soir', time:'10 min · après bébé', color:'var(--blue)'},
+    {id:'soir-alt', name:'', time:'15-20 min · en alternance', color:'var(--terra)'},
+    {id:'carnet', name:'📓 Carnet du soir', time:'5 min · 3 questions', color:'var(--terra)'},
+  ],
+  special: [
+    {id:'coherence-matin', name:'🫁 Cohérence cardiaque — matin', time:'5 min · Respirelax', color:'var(--blue)'},
+    {id:'coherence-midi', name:'🫁 Cohérence cardiaque — midi', time:'5 min', color:'var(--blue)'},
+    {id:'activite-bebe', name:'👶 Activité avec bébé', time:'Remplace le vélo', color:'var(--gold)'},
+    {id:'yoga-maison', name:'🧘‍♀️ Yoga à la maison', time:'20 min', color:'var(--brown)'},
+    {id:'marche-couverte', name:'🏛 Marche couverte', time:'Centre commercial, musée…', color:'var(--brown)'},
+    {id:'lecture-longue', name:'📖 Lecture prolongée', time:'Roman léger', color:'var(--terra)'},
+    {id:'muse-soir', name:'🧠 Muse ou Respirelax — soir', time:'10 min · après bébé', color:'var(--blue)'},
+    {id:'soir-alt', name:'', time:'15-20 min · en alternance', color:'var(--terra)'},
+    {id:'carnet', name:'📓 Carnet du soir', time:'5 min · 3 questions', color:'var(--terra)'},
+  ]
+};
+
+const ALL_BLOC_NAMES = {
+  'velo-matin':'Vélo matin','post-it':'Post-it','coherence-matin':'Cohérence matin',
+  'coherence-midi':'Cohérence midi','velo-retour':'Vélo retour','muse-soir':'Muse/Respirelax',
+  'soir-alt':'Yoga/Lecture','carnet':'Carnet','gainage':'Gainage',
+  'famille':'Famille sans écrans','marche-nature':'Marche nature','etirements':'Étirements',
+  'activite-bebe':'Activité bébé','yoga-maison':'Yoga maison',
+  'marche-couverte':'Marche couverte','lecture-longue':'Lecture'
+};
+
+const MOOD_LABELS = {5:'Séreine 🌸',4:'Bien 🌤',3:'Moyen 🌫',2:'Difficile 🌧',1:'Submergée ⛈'};
+const ENERGY_LABELS = {high:'⚡ Bonne énergie',mid:'🌿 Correcte',low:'🥱 À plat'};
+const MOOD_COLORS = {5:'#7A9E7E',4:'#B5C9B7',3:'#C9A96E',2:'#E2A98A',1:'#C4785A'};
+const TOOLS = {
+  soupir:{text:'Double inspiration par le nez (deux petits coups), puis longue expiration lente par la bouche. Recommence 3 fois. Ça active le nerf vague en moins de 30 secondes et coupe l\'état d\'alarme.'},
+  grounding:{text:'Nomme doucement : 5 choses que tu vois · 4 que tu entends · 3 que tu touches · 2 que tu sens · 1 que tu goûtes. Prends le temps. Ça ramène le système nerveux dans le présent.'},
+  froid:{text:'Passe de l\'eau froide sur tes poignets, l\'intérieur de tes coudes, et si possible ton visage. Tiens 15-20 secondes. Ça active le réflexe de plongée — ton cœur ralentit physiquement.'},
+  coherence:{text:'Ferme les yeux si possible. Inspire par le nez en comptant jusqu\'à 5, expire par la bouche en comptant jusqu\'à 5. Continue 5 minutes. Utilise Respirelax si tu veux être guidée.'}
+};
+
+let state = { selectedMood:null, selectedEnergy:null, checkedBlocs:new Set(), history:[], specialMode:false };
+try { state.history = JSON.parse(localStorage.getItem('meeux-history')||'[]'); } catch(e){}
+
+function getTodayKey() { return new Date().toISOString().split('T')[0]; }
+
+function getDayMode() {
+  if (state.specialMode) return 'special';
+  const day = new Date().getDay(); // 0=dim, 3=mer, 6=sam
+  return (day===0||day===3||day===6) ? 'weekend' : 'semaine';
+}
+
+function getAlternanceDay() { return state.history.length%2===0?1:2; }
+
+function getSoirAltName() { return getAlternanceDay()===1?'🧘 Yoga nidra guidé':'📖 Lecture roman léger'; }
+
+function init() {
+  const now = new Date();
+  document.getElementById('today-date').textContent = now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  updateStreak();
+  renderModeBadge();
+  renderAlternanceBadge();
+  renderBlocs();
+  updatePageSub();
+}
+
+function updatePageSub() {
+  const mode = getDayMode();
+  const subs = {semaine:'Routine semaine 🚲',weekend:'Routine mercredi / week-end 🌿',special:'Mode mauvais temps / vacances ☔'};
+  document.getElementById('page-sub-text').textContent = subs[mode];
+}
+
+function renderModeBadge() {
+  const mode = getDayMode();
+  const badge = document.getElementById('mode-badge');
+  const toggle = document.getElementById('special-toggle');
+  if (state.specialMode) {
+    badge.className='mode-badge special'; badge.textContent='☔ Mauvais temps / Vacances';
+    toggle.classList.add('active-special'); toggle.textContent='✕ Désactiver ce mode';
+  } else if (mode==='weekend') {
+    badge.className='mode-badge weekend'; badge.textContent='🌿 Mercredi / Week-end';
+    toggle.classList.remove('active-special'); toggle.textContent='🌧 Mauvais temps / Vacances';
+  } else {
+    badge.className='mode-badge semaine'; badge.textContent='☀️ Semaine';
+    toggle.classList.remove('active-special'); toggle.textContent='🌧 Mauvais temps / Vacances';
+  }
+}
+
+function toggleSpecialMode() {
+  state.specialMode = !state.specialMode;
+  state.checkedBlocs = new Set();
+  renderModeBadge(); renderBlocs(); updatePageSub();
+}
+
+function renderAlternanceBadge() {
+  const j = getAlternanceDay();
+  const text = j===1?'🧘 Yoga nidra ce soir':'📖 Lecture ce soir';
+  document.getElementById('alternance-indicator').innerHTML = `<div class="alternance-badge"><span class="alt-label">Ce soir c'est</span><span class="alt-value">${text}</span></div>`;
+}
+
+function renderBlocs() {
+  const mode = getDayMode();
+  const blocs = BLOCS[mode];
+  const list = document.getElementById('bloc-list');
+  list.innerHTML = blocs.map(b => {
+    const name = b.id==='soir-alt' ? getSoirAltName() : b.name;
+    const done = state.checkedBlocs.has(b.id);
+    return `<div class="bloc-item${done?' done':''}" data-bloc="${b.id}" onclick="toggleBloc(this)">
+      <div class="bloc-check">✓</div>
+      <div class="bloc-info"><div class="bloc-name">${name}</div><div class="bloc-time">${b.time}</div></div>
+      <div class="bloc-dot" style="background:${b.color}"></div>
+    </div>`;
+  }).join('');
+}
+
+function toggleBloc(el) {
+  const bloc = el.dataset.bloc;
+  if (state.checkedBlocs.has(bloc)){state.checkedBlocs.delete(bloc);el.classList.remove('done');}
+  else{state.checkedBlocs.add(bloc);el.classList.add('done');}
+}
+
+function selectMood(btn) {
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.selectedMood = parseInt(btn.dataset.mood);
+  const panel = document.getElementById('hard-day-panel');
+  if (state.selectedMood<=2){panel.classList.add('visible');panel.scrollIntoView({behavior:'smooth',block:'nearest'});}
+  else panel.classList.remove('visible');
+}
+
+function selectEnergy(btn) {
+  document.querySelectorAll('.energy-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.selectedEnergy = btn.dataset.energy;
+}
+
+function showTool(key, card) {
+  document.querySelectorAll('.tool-card').forEach(c=>c.classList.remove('active'));
+  card.classList.add('active');
+  const instr = document.getElementById('tool-instruction');
+  document.getElementById('tool-instruction-text').textContent = TOOLS[key].text;
+  instr.classList.add('visible');
+}
+
+function updateStreak() {
+  const s = calcStreak();
+  document.getElementById('streak-display').textContent = `🌿 ${s} jour${s>1?'s':''}`;
+}
+
+function calcStreak() {
+  if(!state.history.length) return 1;
+  let streak=0; const today=new Date();
+  for(let i=0;i<30;i++){
+    const d=new Date(today); d.setDate(today.getDate()-i);
+    const key=d.toISOString().split('T')[0];
+    if(state.history.find(h=>h.date===key)) streak++;
+    else if(i>0) break;
+  }
+  return Math.max(1,streak);
+}
+
+async function validateDay() {
+  if(!state.selectedMood||!state.selectedEnergy){alert('N\'oublie pas de noter ton état émotionnel et ton énergie 🌿');return;}
+  const btn=document.getElementById('validate-btn');
+  btn.disabled=true; btn.textContent='Enregistrement...';
+  const mode=getDayMode();
+  const entry={date:getTodayKey(),mood:state.selectedMood,energy:state.selectedEnergy,blocs:[...state.checkedBlocs],total:BLOCS[mode].length,mode};
+  state.history=state.history.filter(h=>h.date!==entry.date);
+  state.history.unshift(entry);
+  if(state.history.length>30) state.history=state.history.slice(0,30);
+  try{localStorage.setItem('meeux-history',JSON.stringify(state.history));}catch(e){}
+  const card=document.getElementById('feedback-card');
+  card.classList.add('visible');
+  card.scrollIntoView({behavior:'smooth',block:'nearest'});
+  await getFeedback(entry);
+  btn.disabled=false; btn.textContent='✓ Journée enregistrée';
+  updateStreak();
+}
+
+async function getFeedback(entry) {
+  const textEl=document.getElementById('feedback-text');
+  textEl.innerHTML=`<div class="feedback-loading"><span>Un moment</span><div class="dots"><span></span><span></span><span></span></div></div>`;
+  const modeLabels={semaine:'jour de semaine',weekend:'mercredi ou week-end',special:'jour de mauvais temps / vacances'};
+  const doneBlocs=entry.blocs.map(b=>ALL_BLOC_NAMES[b]||b).join(', ')||'aucun';
+  const prompt=`Tu es une accompagnatrice bienveillante pour une jeune maman en postpartum (11 mois) souffrant d'anxiété, qui travaille et a un bébé avec des difficultés de sommeil.
+
+Aujourd'hui (${modeLabels[entry.mode]}) : état ${MOOD_LABELS[entry.mood]}, énergie ${ENERGY_LABELS[entry.energy]}, blocs complétés (${entry.blocs.length}/${entry.total}) : ${doneBlocs}.
+
+Écris un message personnel, doux et encourageant de 3-4 phrases. Reconnais son état, valorise ce qu'elle a fait même si peu, donne une micro-intention douce pour demain. Tutoie-la, pas de bullet points ni titre.`;
+  try{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+    const d=await r.json();
+    textEl.textContent=d.content?.map(i=>i.text||'').join('')||'Bien joué pour aujourd\'hui. 🌿';
+  }catch(e){textEl.textContent='Tu as fait ce que tu pouvais. Demain est un nouveau jour. 🌿';}
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  if(name==='week') renderWeek();
+}
+
+function renderWeek() {
+  renderWeekGrid(); renderMoodChart(); renderWeeklyQuestion(); renderStats(); renderHistory();
+  if(state.history.length>0) loadWeekAnalysis();
+}
+
+function renderWeekGrid() {
+  const grid=document.getElementById('week-grid');
+  const days=['D','L','M','M','J','V','S'];
+  const today=new Date(); const todayKey=getTodayKey();
+  let html='';
+  for(let i=6;i>=0;i--){
+    const d=new Date(today); d.setDate(today.getDate()-i);
+    const key=d.toISOString().split('T')[0];
+    const entry=state.history.find(h=>h.date===key);
+    const isToday=key===todayKey;
+    let cls='',content='';
+    if(entry){
+      const pct=entry.blocs.length/entry.total;
+      if(entry.mood>=4&&pct>=0.6){cls='great';content='🌸';}
+      else if(entry.mood>=3&&pct>=0.4){cls='good';content='🌤';}
+      else if(entry.mood>=2){cls='ok';content='🌫';}
+      else{cls='hard';content='🌧';}
+    } else{content=i===0?'·':'';}
+    html+=`<div class="week-day"><div class="week-day-label">${days[d.getDay()]}</div><div class="week-day-dot ${cls}${isToday?' today':''}">${content}</div></div>`;
+  }
+  grid.innerHTML=html;
+}
+
+function renderMoodChart() {
+  const chart=document.getElementById('mood-chart');
+  const today=new Date(); const days=['D','L','M','M','J','V','S'];
+  let html='';
+  for(let i=6;i>=0;i--){
+    const d=new Date(today); d.setDate(today.getDate()-i);
+    const key=d.toISOString().split('T')[0];
+    const entry=state.history.find(h=>h.date===key);
+    const dayLabel=days[d.getDay()];
+    if(entry){
+      const h=(entry.mood/5)*60;
+      html+=`<div class="mood-bar-wrap"><div class="mood-bar" style="height:${h}px;background:${MOOD_COLORS[entry.mood]};"></div><div class="mood-bar-label">${dayLabel}</div></div>`;
+    } else {
+      html+=`<div class="mood-bar-wrap"><div class="mood-bar" style="height:4px;background:var(--warm);"></div><div class="mood-bar-label">${dayLabel}</div></div>`;
+    }
+  }
+  chart.innerHTML=html;
+}
+
+async function renderWeeklyQuestion() {
+  const wrap=document.getElementById('weekly-question-wrap');
+  const week=getThisWeekEntries();
+  if(week.length<2){wrap.innerHTML='';return;}
+  const hardDays=week.filter(e=>e.mood<=2);
+  let contextHint='';
+  if(hardDays.length>=2){
+    const dayNames=hardDays.map(e=>new Date(e.date).toLocaleDateString('fr-FR',{weekday:'long'})).join(' et ');
+    contextHint=`Elle a eu des journées difficiles le ${dayNames}.`;
+  } else contextHint='Sa semaine se passe plutôt bien dans l\'ensemble.';
+  wrap.innerHTML=`<div class="weekly-question-card"><div class="wq-label">Question de la semaine</div><div class="wq-text" id="wq-text"><div class="feedback-loading"><span>Chargement</span><div class="dots"><span></span><span></span><span></span></div></div></div></div>`;
+  try{
+    const prompt=`Tu es une accompagnatrice bienveillante pour une jeune maman en postpartum. ${contextHint} Pose-lui UNE seule question douce et ouverte qui l'invite à réfléchir sur cette semaine. Max 1 phrase. Tutoie-la.`;
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:200,messages:[{role:"user",content:prompt}]})});
+    const d=await r.json();
+    document.getElementById('wq-text').textContent=d.content?.map(i=>i.text||'').join('')||'Qu\'est-ce qui t\'a donné de l\'énergie cette semaine ?';
+  }catch(e){document.getElementById('wq-text').textContent='Qu\'est-ce qui t\'a donné de l\'énergie cette semaine, même un tout petit moment ?';}
+}
+
+function renderStats() {
+  document.getElementById('stat-streak').textContent=calcStreak();
+  const week=getThisWeekEntries();
+  if(week.length>0){
+    const pct=Math.round(week.reduce((a,e)=>a+e.blocs.length,0)/week.reduce((a,e)=>a+e.total,0)*100);
+    document.getElementById('stat-blocs').textContent=pct+'%';
+    const avg=Math.round(week.reduce((a,e)=>a+e.mood,0)/week.length);
+    document.getElementById('stat-mood').textContent={5:'🌸',4:'🌤',3:'🌫',2:'🌧',1:'⛈'}[avg]||'—';
+  }
+}
+
+function getThisWeekEntries() {
+  const today=new Date(); const out=[];
+  for(let i=0;i<7;i++){const d=new Date(today);d.setDate(today.getDate()-i);const key=d.toISOString().split('T')[0];const e=state.history.find(h=>h.date===key);if(e)out.push(e);}
+  return out;
+}
+
+function renderHistory() {
+  const list=document.getElementById('history-list');
+  if(!state.history.length){list.innerHTML='<div style="text-align:center;color:var(--ink-faint);font-size:13px;padding:20px;">Aucune journée enregistrée encore 🌿</div>';return;}
+  list.innerHTML=state.history.slice(0,7).map(entry=>{
+    const dateStr=new Date(entry.date).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+    const moodEmoji={5:'🌸',4:'🌤',3:'🌫',2:'🌧',1:'⛈'}[entry.mood];
+    const blocsHtml=entry.blocs.map(b=>`<span class="history-bloc done">${ALL_BLOC_NAMES[b]||b}</span>`).join('');
+    const modeLabel={semaine:'☀️',weekend:'🌿',special:'☔'}[entry.mode]||'';
+    return `<div class="history-item"><div class="history-top"><div class="history-date">${modeLabel} ${dateStr}</div><div class="history-mood">${moodEmoji}</div></div><div class="history-blocs">${blocsHtml}</div></div>`;
+  }).join('');
+}
+
+async function loadWeekAnalysis() {
+  const textEl=document.getElementById('analysis-text');
+  textEl.innerHTML=`<div class="feedback-loading"><span>Analyse en cours</span><div class="dots"><span></span><span></span><span></span></div></div>`;
+  const week=getThisWeekEntries();
+  if(!week.length){textEl.textContent='Valide au moins une journée pour voir ton analyse.';return;}
+  const modeLabels={semaine:'semaine',weekend:'mercredi/week-end',special:'mode vacances/mauvais temps'};
+  const summary=week.map(e=>{
+    const pct=Math.round(e.blocs.length/e.total*100);
+    const day=new Date(e.date).toLocaleDateString('fr-FR',{weekday:'long'});
+    return `${day} (${modeLabels[e.mode]||''}): humeur ${MOOD_LABELS[e.mood]}, énergie ${ENERGY_LABELS[e.energy]}, ${pct}% blocs`;
+  }).join('\n');
+  const prompt=`Tu es une accompagnatrice bienveillante pour une jeune maman en postpartum (11 mois) souffrant d'anxiété.\n\nSon historique:\n${summary}\n\nAnalyse douce de 4-5 phrases: identifie un pattern positif, note avec douceur une difficulté si présente, propose un ajustement concret. Tutoie-la. Pas de bullet points ni titre.`;
+  try{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})});
+    const d=await r.json();
+    textEl.textContent=d.content?.map(i=>i.text||'').join('')||'Continue comme ça. 🌿';
+  }catch(e){textEl.textContent='Tu avances, même dans les jours difficiles. 🌿';}
+}
+
+init();
+</script>
+</body>
+</html>
